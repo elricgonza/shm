@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}Pagos{% endblock %}
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Pagos', '#')]) }}
+
+<div class="card mb-5">
+  <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Buscar Alumno</p>
+  <div class="relative" id="autocomplete-wrapper">
+    <div class="flex gap-2">
+      <div class="relative flex-1">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input id="alu-search" type="text" autocomplete="off"
+               placeholder="Escribir nombre, apellido o C.I. del alumno..."
+               value="{{ alumno_sel.nombre_completo if alumno_sel else '' }}"
+               class="w-full pl-9 pr-4 h-10 text-sm border border-slate-200 rounded-xl bg-white
+                      focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                      transition placeholder-slate-400">
+        <input type="hidden" id="alu-id" value="{{ alu_id or '' }}">
+      </div>
+      <button id="btn-ver" onclick="irAPagos()"
+              class="h-10 px-5 rounded-xl text-sm font-semibold text-white flex-shrink-0 transition hover:opacity-90"
+              style="background:#7C1F3E;">
+        Ver Pagos
+      </button>
+      {% if alu_id %}
+      <a href="{{ url_for('pago.index') }}"
+         class="h-10 px-3 rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 flex items-center flex-shrink-0 transition-all" title="Limpiar">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Dropdown resultados -->
+    <div id="alu-dropdown"
+         class="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg hidden overflow-hidden">
+      <div id="alu-results"></div>
+      <div id="alu-empty" class="hidden px-4 py-3 text-sm text-slate-400 text-center">Sin resultados</div>
+      <div id="alu-loading" class="hidden px-4 py-3 text-sm text-slate-400 text-center">
+        <svg class="inline w-4 h-4 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>Buscando...
+      </div>
+    </div>
+  </div>
+
+  {% if alumno_sel %}
+  <div class="mt-3 flex items-center gap-2 text-sm text-slate-600">
+    <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+    </svg>
+    Mostrando pagos de <strong class="ml-1 text-slate-800">{{ alumno_sel.nombre_completo }}</strong>
+    {% if alumno_sel.ci %}<span class="ml-2 font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">CI: {{ alumno_sel.ci }}</span>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if alumno_sel %}
+{% set total = pagos|sum(attribute='cuota') %}
+{% set pagado = pagos|selectattr('pagado')|list|sum(attribute='cuota') %}
+<div class="grid grid-cols-3 gap-4 mb-5">
+  <div class="card text-center">
+    <p class="text-2xl font-bold text-slate-800">Bs. {{ "%.2f"|format(total) }}</p>
+    <p class="text-xs text-slate-500 mt-1">Total</p>
+  </div>
+  <div class="card text-center">
+    <p class="text-2xl font-bold text-emerald-700">Bs. {{ "%.2f"|format(pagado) }}</p>
+    <p class="text-xs text-slate-500 mt-1">Pagado</p>
+  </div>
+  <div class="card text-center">
+    <p class="text-2xl font-bold text-red-600">Bs. {{ "%.2f"|format(total - pagado) }}</p>
+    <p class="text-xs text-slate-500 mt-1">Pendiente</p>
+  </div>
+</div>
+
+{# Calcular la primera cuota pendiente (la única habilitada para pago) #}
+{% set primera_pendiente_nro = namespace(val=none) %}
+{% for p in pagos %}
+  {% if not p.pagado and primera_pendiente_nro.val is none %}
+    {% set primera_pendiente_nro.val = p.nro_cuota %}
+  {% endif %}
+{% endfor %}
+
+<div class="card p-0 overflow-hidden">
+  <div style="background:linear-gradient(135deg,#7C1F3E,#5C1530);"><table class="w-full"><thead><tr>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Cuota</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Monto</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Estado</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Método</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Fecha Pago</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Referencia</th>
+    <th class="px-4 py-3 text-center text-xs font-bold text-white/80 uppercase tracking-wider">Acciones</th>
+  </tr></thead></table></div>
+  <table class="w-full"><tbody>
+    {% for p in pagos %}
+    {# Una cuota pendiente está habilitada SOLO si es la de menor nro_cuota sin pagar #}
+    {% set es_siguiente = (not p.pagado and p.nro_cuota == primera_pendiente_nro.val) %}
+    {% set bloqueada    = (not p.pagado and p.nro_cuota != primera_pendiente_nro.val) %}
+    <tr class="border-t border-slate-100 transition-colors {% if bloqueada %}bg-slate-50/60{% else %}hover:bg-primary-50/40{% endif %}">
+      <td class="px-4 py-3 text-sm font-bold {% if bloqueada %}text-slate-400{% else %}text-slate-700{% endif %}"># {{ p.nro_cuota }}</td>
+      <td class="px-4 py-3 text-sm font-semibold {% if bloqueada %}text-slate-400{% else %}text-slate-800{% endif %}">Bs. {{ "%.2f"|format(p.cuota) }}</td>
+      <td class="px-4 py-3">
+        {% if p.pagado %}
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Pagado
+        </span>
+        {% elif es_siguiente %}
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pendiente
+        </span>
+        {% else %}
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>En espera
+        </span>
+        {% endif %}
+      </td>
+      <td class="px-4 py-3 text-sm {% if bloqueada %}text-slate-400{% else %}text-slate-600{% endif %}">{{ p.metodo_pago or '—' }}</td>
+      <td class="px-4 py-3 text-sm {% if bloqueada %}text-slate-400{% else %}text-slate-600{% endif %}">{{ p.fecha_pago.strftime('%d/%m/%Y') if p.fecha_pago else '—' }}</td>
+      <td class="px-4 py-3 text-xs {% if bloqueada %}text-slate-300{% else %}text-slate-500{% endif %} font-mono">{{ p.referencia_pago or '—' }}</td>
+      <td class="px-4 py-3 text-center">
+        {% if p.pagado %}
+          {# Sin acción para cuotas ya pagadas #}
+        {% elif es_siguiente and current_user.has_permission('pago_crear') %}
+        <a href="{{ url_for('pago.registrar', id=p.id) }}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>Registrar
+        </a>
+        {% elif bloqueada and current_user.has_permission('pago_crear') %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 bg-slate-100 cursor-not-allowed select-none"
+              title="Debe registrar primero la Cuota #{{ primera_pendiente_nro.val }}">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>Bloqueada
+        </span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="px-4 py-14 text-center">
+      <div class="flex flex-col items-center gap-3 text-slate-400">
+        <svg class="w-10 h-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+        </svg>
+        <p class="text-sm font-medium">Sin cuotas registradas para este alumno</p>
+      </div>
+    </td></tr>
+    {% endfor %}
+  </tbody></table>
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center py-20 text-slate-400">
+  <svg class="w-16 h-16 opacity-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+  </svg>
+  <p class="text-sm font-medium">Busque un alumno para ver su plan de pagos</p>
+</div>
+{% endif %}
+
+<script>
+(function () {
+  const input    = document.getElementById('alu-search');
+  const hiddenId = document.getElementById('alu-id');
+  const dropdown = document.getElementById('alu-dropdown');
+  const results  = document.getElementById('alu-results');
+  const empty    = document.getElementById('alu-empty');
+  const loading  = document.getElementById('alu-loading');
+  let timer = null;
+
+  input.addEventListener('input', function () {
+    clearTimeout(timer);
+    const q = this.value.trim();
+    hiddenId.value = '';           // al escribir de nuevo, limpia selección
+    if (q.length < 2) { hideDropdown(); return; }
+    timer = setTimeout(() => buscar(q), 280);
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') hideDropdown();
+    if (e.key === 'Enter') { e.preventDefault(); irAPagos(); }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!document.getElementById('autocomplete-wrapper').contains(e.target)) hideDropdown();
+  });
+
+  function buscar(q) {
+    showLoading();
+    fetch(`{{ url_for('pago.buscar_alumno') }}?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        results.innerHTML = '';
+        if (!data.length) { showEmpty(); return; }
+        data.forEach(a => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 cursor-pointer transition-colors border-b border-slate-100 last:border-0';
+          div.innerHTML = `
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                 style="background:linear-gradient(135deg,#7C1F3E,#5C1530)">${a.texto[0] || '?'}</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-slate-800 truncate">${a.texto}</p>
+              <p class="text-xs text-slate-400">CI: ${a.ci}</p>
+            </div>
+            ${a.activo
+              ? '<span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex-shrink-0">Activo</span>'
+              : '<span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex-shrink-0">Inactivo</span>'}
+          `;
+          div.addEventListener('click', () => seleccionar(a));
+          results.appendChild(div);
+        });
+        empty.classList.add('hidden');
+        loading.classList.add('hidden');
+        dropdown.classList.remove('hidden');
+      })
+      .catch(() => hideDropdown());
+  }
+
+  function seleccionar(a) {
+    input.value    = a.texto;
+    hiddenId.value = a.id;
+    hideDropdown();
+    irAPagos();
+  }
+
+  function showLoading() {
+    results.innerHTML = '';
+    empty.classList.add('hidden');
+    loading.classList.remove('hidden');
+    dropdown.classList.remove('hidden');
+  }
+
+  function showEmpty() {
+    loading.classList.add('hidden');
+    empty.classList.remove('hidden');
+    dropdown.classList.remove('hidden');
+  }
+
+  function hideDropdown() {
+    dropdown.classList.add('hidden');
+  }
+
+  window.irAPagos = function () {
+    const id = hiddenId.value;
+    if (id) window.location.href = `{{ url_for('pago.index') }}?alu_id=${id}`;
+  };
+})();
+</script>
+{% endblock %}

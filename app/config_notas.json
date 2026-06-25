@@ -1,0 +1,11 @@
+{
+  "habilitar_nota1": true,
+  "transcripcion_nota1_inicio": "2026-06-01",
+  "transcripcion_nota1_final": "2026-06-10",
+  "habilitar_nota2": true,
+  "transcripcion_nota2_inicio": "2026-07-01",
+  "transcripcion_nota2_final": "2026-07-30",
+  "habilitar_nota3": false,
+  "transcripcion_nota3_inicio": "",
+  "transcripcion_nota3_final": ""
+}

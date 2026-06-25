@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import confirm_delete, breadcrumb, table_toolbar %}
+{% block page_title %}Cursos{% endblock %}
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Cursos', '#')]) }}
+{{ table_toolbar(total,'Nuevo Curso',url_for('curso.nuevo'),current_user.has_permission('curso_crear'),'Buscar por nombre, grado, paralelo, aula o gestión...','q',q|default('')) }}
+<div class="card p-0 overflow-hidden">
+  <div style="background:linear-gradient(135deg,#7C1F3E,#5C1530);"><table class="w-full"><thead><tr>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Curso</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Paralelo</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Grado</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Aula</th>
+    <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Gestión</th>
+    <th class="px-4 py-3 text-center text-xs font-bold text-white/80 uppercase tracking-wider">Acciones</th>
+  </tr></thead></table></div>
+  <table class="w-full"><tbody>
+    {% for c in cursos %}
+    <tr class="border-t border-slate-100 hover:bg-primary-50/40 transition-colors">
+      <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ c.curso or '—' }}</td>
+      <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700">{{ c.paralelo }}</span></td>
+      <td class="px-4 py-3 text-sm text-slate-600">{{ c.grado.grado }}</td>
+      <td class="px-4 py-3 text-sm text-slate-500">{{ c.aula or '—' }}</td>
+      <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background:#FAE4EB;color:#7C1F3E;">{{ c.gestion }}</span></td>
+      <td class="px-4 py-3"><div class="flex items-center justify-center gap-2">
+        {% if current_user.has_permission('curso_editar') %}
+        <a href="{{ url_for('curso.editar', id=c.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Editar</a>{% endif %}
+        {% if current_user.has_permission('curso_borrar') %}{{ confirm_delete(url_for('curso.eliminar', id=c.id)) }}{% endif %}
+      </div></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="px-4 py-14 text-center"><div class="flex flex-col items-center gap-3 text-slate-400">
+      <svg class="w-12 h-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <p class="text-sm font-medium">{% if q %}No se encontraron cursos para "{{ q }}"{% else %}Sin cursos registrados{% endif %}</p>
+    </div></td></tr>
+    {% endfor %}
+  </tbody></table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="flex items-center justify-between mt-4 px-1">
+  <span class="text-xs text-slate-500">
+    Mostrando {{ ((pagination.page - 1) * pagination.per_page) + 1 }}–{{ [pagination.page * pagination.per_page, pagination.total] | min }} de {{ pagination.total }} registros
+  </span>
+  <div class="flex items-center gap-1">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('curso.index', page=pagination.prev_num, q=q) }}"
+       class="h-8 w-8 flex items-center justify-center rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    {% endif %}
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        {% if p == pagination.page %}
+        <span class="h-8 w-8 flex items-center justify-center rounded-lg text-sm font-semibold text-white" style="background:#7C1F3E;">{{ p }}</span>
+        {% else %}
+        <a href="{{ url_for('curso.index', page=p, q=q) }}"
+           class="h-8 w-8 flex items-center justify-center rounded-lg text-sm text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all">{{ p }}</a>
+        {% endif %}
+      {% else %}
+        <span class="h-8 w-8 flex items-center justify-center text-slate-400 text-sm">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if pagination.has_next %}
+    <a href="{{ url_for('curso.index', page=pagination.next_num, q=q) }}"
+       class="h-8 w-8 flex items-center justify-center rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

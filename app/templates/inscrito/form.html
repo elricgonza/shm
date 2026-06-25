@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}{{ 'Editar' if inscrito else 'Nueva' }} Inscripción{% endblock %}
+
+{% block head_extra %}
+<!-- Tom Select — selector buscable de alumnos -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<style>
+  /* ── Tom Select: integración con tema del sistema ──────────────────── */
+  .ts-wrapper.single .ts-control {
+    height: 44px !important;
+    padding-left: 2.5rem !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.875rem !important;
+    border: 1px solid var(--border) !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    align-items: center;
+    display: flex;
+  }
+  .ts-wrapper.single .ts-control input {
+    color: var(--text-primary) !important;
+  }
+  .ts-wrapper.single.input-active .ts-control {
+    background: var(--surface) !important;
+    border-color: #7C1F3E !important;
+    box-shadow: 0 0 0 3px rgba(124,31,62,.15) !important;
+  }
+  .ts-dropdown {
+    border-radius: 0.75rem !important;
+    border: 1px solid var(--border) !important;
+    background: var(--surface) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+    margin-top: 4px !important;
+    overflow: hidden;
+  }
+  .ts-dropdown .ts-dropdown-content {
+    max-height: 220px;
+  }
+  .ts-dropdown .option {
+    padding: 8px 14px !important;
+    font-size: 0.875rem !important;
+    color: var(--text-primary) !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ts-dropdown .option:hover,
+  .ts-dropdown .option.active {
+    background: rgba(124,31,62,.08) !important;
+    color: #7C1F3E !important;
+  }
+  .ts-dropdown .no-results {
+    color: var(--text-muted) !important;
+    font-size: 0.875rem !important;
+    padding: 10px 14px !important;
+  }
+  /* Icono CI (badge pequeño dentro de cada opción) */
+  .opt-ci {
+    font-size: 0.7rem;
+    background: rgba(124,31,62,.1);
+    color: #7C1F3E;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-weight: 600;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  /* Chip del alumno seleccionado */
+  .ts-wrapper.single .ts-control .item {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  /* Buscador interno del dropdown */
+  .ts-dropdown input[type="text"] {
+    font-size: 0.875rem !important;
+    padding: 8px 12px !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    width: 100%;
+  }
+  /* Disabled state */
+  .ts-wrapper.disabled .ts-control { opacity: .6 !important; cursor: not-allowed !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Inscripciones', url_for('inscrito.index')), ('Formulario', '#')]) }}
+
+<div class="max-w-xl">
+  <div class="card">
+    <!-- Encabezado -->
+    <div class="flex items-center gap-4 pb-5 mb-6 border-b" style="border-color:var(--border);">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+           style="background:linear-gradient(135deg,#FAE4EB,#F2BAC9);">
+        <svg class="w-6 h-6" style="color:#7C1F3E;" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="font-heading font-bold text-lg" style="color:var(--text-primary);">
+          {{ 'Editar Inscripción' if inscrito else 'Nueva Inscripción' }}
+        </h2>
+        <p class="text-sm mt-0.5" style="color:var(--text-muted);">Registre los datos de la inscripción</p>
+      </div>
+    </div>
+
+    <form method="POST">
+      <div class="space-y-5">
+
+        <!-- ── ALUMNO (selector buscable) ─────────────────────────── -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1.5"
+                 style="color:var(--text-muted);">
+            Alumno <span class="text-red-500">*</span>
+          </label>
+
+          {% if not inscrito %}
+          <!-- Ayuda visual -->
+          <p class="text-xs mb-2" style="color:var(--text-muted);">
+            <svg class="w-3.5 h-3.5 inline -mt-0.5 mr-1" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
+            </svg>
+            Escriba el nombre o CI del alumno para filtrar rápidamente
+          </p>
+          {% endif %}
+
+          <div class="relative">
+            <!-- Ícono superpuesto al selector -->
+            <span class="absolute left-0 inset-y-0 w-10 flex items-center justify-center
+                         pointer-events-none z-10" style="color:var(--text-muted);">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </span>
+
+            <select id="alu_id_select" name="alu_id" required
+                    {% if inscrito %}disabled{% endif %}>
+              <option value="">Seleccionar alumno...</option>
+              {% for a in alumnos %}
+              <option value="{{ a.id }}"
+                      data-ci="{{ a.ci or '' }}"
+                      {% if inscrito and inscrito.alu_id == a.id %}selected{% endif %}>
+                {{ a.nombre_completo }}{% if a.ci %} — CI {{ a.ci }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if inscrito %}
+          <input type="hidden" name="alu_id" value="{{ inscrito.alu_id }}">
+          {% endif %}
+        </div>
+
+        <!-- ── CURSO ──────────────────────────────────────────────── -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1.5"
+                 style="color:var(--text-muted);">
+            Curso <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-0 inset-y-0 w-10 flex items-center justify-center
+                         pointer-events-none z-10" style="color:var(--text-muted);">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </span>
+            <select name="cur_id" required
+                    class="w-full h-11 pl-10 pr-4 text-sm rounded-xl appearance-none transition
+                           focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    style="border:1px solid var(--border); background:var(--input-bg); color:var(--text-primary);">
+              <option value="">Seleccionar curso...</option>
+              {% for c in cursos %}
+              <option value="{{ c.id }}"
+                      {% if inscrito and inscrito.cur_id == c.id %}selected{% endif %}>
+                {{ c.gestion }} — {{ c.curso or '' }} {{ c.paralelo }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- ── DESCUENTO ──────────────────────────────────────────── -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-1.5"
+                   style="color:var(--text-muted);">% Descuento</label>
+            <div class="relative">
+              <span class="absolute left-0 inset-y-0 w-10 flex items-center justify-center
+                           pointer-events-none" style="color:var(--text-muted);">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M17 17h.01M7 17L17 7"/>
+                </svg>
+              </span>
+              <input type="number" name="descuento" min="0" max="100"
+                     value="{{ inscrito.descuento if inscrito else 0 }}"
+                     class="w-full h-11 pl-10 pr-3 text-sm rounded-xl transition
+                            focus:outline-none focus:ring-2 focus:ring-primary-500"
+                     style="border:1px solid var(--border); background:var(--input-bg); color:var(--text-primary);">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-1.5"
+                   style="color:var(--text-muted);">Motivo Descuento</label>
+            <input type="text" name="motivo_descuento"
+                   value="{{ inscrito.motivo_descuento if inscrito else '' }}"
+                   placeholder="Razón del descuento"
+                   class="w-full h-11 px-3 text-sm rounded-xl transition
+                          focus:outline-none focus:ring-2 focus:ring-primary-500"
+                   style="border:1px solid var(--border); background:var(--input-bg); color:var(--text-primary);">
+          </div>
+        </div>
+
+        <!-- ── ESTADO ─────────────────────────────────────────────── -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-2"
+                 style="color:var(--text-muted);">Estado de Inscripción</label>
+          <div class="flex gap-3">
+            <label class="flex-1 flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer
+                          transition-colors hover:border-primary-200"
+                   style="border-color:var(--border);">
+              <input type="checkbox" name="reserva"
+                     {% if inscrito and inscrito.reserva %}checked{% endif %}
+                     class="w-4 h-4 rounded border-slate-300 cursor-pointer"
+                     style="accent-color:#7C1F3E;">
+              <span class="text-sm font-medium" style="color:var(--text-primary);">Reserva</span>
+            </label>
+            <label class="flex-1 flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer
+                          transition-colors hover:border-primary-200"
+                   style="border-color:var(--border);">
+              <input type="checkbox" name="inscrito"
+                     {% if not inscrito or inscrito.inscrito %}checked{% endif %}
+                     class="w-4 h-4 rounded border-slate-300 cursor-pointer"
+                     style="accent-color:#7C1F3E;">
+              <span class="text-sm font-medium" style="color:var(--text-primary);">Inscrito</span>
+            </label>
+            {% if inscrito %}
+            <label class="flex-1 flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer
+                          transition-colors hover:border-red-300"
+                   style="border-color:rgba(220,38,38,.2); background:rgba(220,38,38,.03);">
+              <input type="checkbox" name="abandono"
+                     {% if inscrito and inscrito.abandono %}checked{% endif %}
+                     class="w-4 h-4 rounded border-slate-300 cursor-pointer"
+                     style="accent-color:#dc2626;">
+              <span class="text-sm font-medium text-red-700">Abandono</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- ── OBSERVACIONES ──────────────────────────────────────── -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1.5"
+                 style="color:var(--text-muted);">Observaciones</label>
+          <div class="relative">
+            <span class="absolute left-0 top-3 w-10 flex items-center justify-center
+                         pointer-events-none" style="color:var(--text-muted);">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </span>
+            <input type="text" name="obs"
+                   value="{{ inscrito.obs if inscrito else '' }}"
+                   placeholder="Notas adicionales"
+                   class="w-full h-11 pl-10 pr-4 text-sm rounded-xl transition
+                          focus:outline-none focus:ring-2 focus:ring-primary-500"
+                   style="border:1px solid var(--border); background:var(--input-bg); color:var(--text-primary);">
+          </div>
+        </div>
+
+        <!-- Nota informativa (solo en creación) -->
+        {% if not inscrito %}
+        <div class="flex items-start gap-3 p-4 rounded-xl border"
+             style="background:#FAE4EB; border-color:#F2BAC9;">
+          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" style="color:#7C1F3E;" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-sm" style="color:#4A1226;">
+            <strong>Nota:</strong> Al confirmar la inscripción se generará automáticamente el plan
+            de pagos según el costo del curso.
+          </p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex items-center gap-3 pt-5 mt-5 border-t" style="border-color:var(--border);">
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold
+                       text-white hover:opacity-90 transition-all"
+                style="background:linear-gradient(135deg,#7C1F3E,#5C1530);">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="{{ 'M5 13l4 4L19 7' if inscrito else 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' }}"/>
+          </svg>
+          {{ 'Guardar Cambios' if inscrito else 'Inscribir Alumno' }}
+        </button>
+        <a href="{{ url_for('inscrito.index') }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
+                  transition-all"
+           style="color:var(--text-muted); background:var(--input-bg);">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const isDisabled = {{ 'true' if inscrito else 'false' }};
+
+  new TomSelect('#alu_id_select', {
+    placeholder: 'Escriba nombre o CI para buscar...',
+    searchField: ['text'],   // busca en el texto completo de la opción
+    maxOptions: 200,
+    closeAfterSelect: true,
+    selectOnTab: true,
+    highlight: true,
+    disabled: isDisabled,
+
+    render: {
+      // Cada opción del dropdown
+      option: function (data, escape) {
+        // Extraemos el CI si viene en el texto (formato "Nombre — CI 123456")
+        const parts = data.text.split(' — CI ');
+        const nombre = escape(parts[0]);
+        const ci     = parts[1] ? `<span class="opt-ci">CI ${escape(parts[1])}</span>` : '';
+        return `<div class="flex items-center w-full gap-1">
+                  <span class="flex-1">${nombre}</span>${ci}
+                </div>`;
+      },
+      // El ítem una vez seleccionado (dentro del control)
+      item: function (data, escape) {
+        const nombre = escape(data.text.split(' — CI ')[0]);
+        return `<span>${nombre}</span>`;
+      },
+      no_results: function () {
+        return '<div class="no-results">Sin resultados para esa búsqueda</div>';
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

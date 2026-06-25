@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}{{ 'Editar Rol' if rol else 'Nuevo Rol' }}{% endblock %}
+
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Administración', '#'), ('Roles', url_for('admin.roles')), (('Editar: ' ~ rol.rol) if rol else 'Nuevo', '#')]) }}
+
+<div class="max-w-2xl">
+
+  {# ── Encabezado ── #}
+  <div class="flex items-center gap-4 mb-6">
+    <div class="w-14 h-14 rounded-2xl bg-primary-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+      <svg class="w-7 h-7 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+      </svg>
+    </div>
+    <div>
+      <h2 class="font-heading font-bold text-xl text-slate-800">
+        {{ 'Editar: ' ~ rol.rol if rol else 'Crear nuevo rol' }}
+      </h2>
+      <p class="text-sm text-slate-500">
+        {{ 'Modifica el nombre, descripción y permisos de este rol.' if rol
+           else 'Define un nuevo rol con sus permisos de acceso.' }}
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="POST" class="space-y-6">
+
+      {# ── Datos básicos ── #}
+      <div>
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4 pb-2 border-b border-slate-100">
+          Información del rol
+        </h3>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="form-label">Nombre del rol</label>
+            <input type="text" name="rol" required
+                   value="{{ rol.rol if rol else '' }}"
+                   class="form-input"
+                   placeholder="Ej: transcriptor">
+          </div>
+          <div>
+            <label class="form-label">Descripción <span class="font-normal text-slate-400">(opcional)</span></label>
+            <input type="text" name="descripcion"
+                   value="{{ rol.descripcion if rol else '' }}"
+                   class="form-input"
+                   placeholder="Breve descripción del rol">
+          </div>
+        </div>
+      </div>
+
+      {# ── Permisos ── #}
+      <div>
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Permisos del rol</h3>
+          <span class="text-xs text-slate-400">{{ permisos|length }} disponibles</span>
+        </div>
+
+        {% if permisos %}
+        {# Agrupar por módulo (prefijo antes del _) #}
+        {% set ns = namespace(prev_module='') %}
+        <div class="space-y-4">
+          {% for p in permisos %}
+            {% set modulo = p.permiso.split('_')[0] %}
+            {% if modulo != ns.prev_module %}
+              {% if not loop.first %}</div>{% endif %}
+              <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 capitalize">
+                  {{ modulo }}
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {% set ns.prev_module = modulo %}
+            {% endif %}
+
+            <label class="flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-all duration-150
+                          {% if rol and p in rol.permisos %}
+                            border-primary-300 bg-primary-50
+                          {% else %}
+                            border-slate-200 hover:border-primary-200 hover:bg-slate-50
+                          {% endif %}">
+              <input type="checkbox" name="permisos" value="{{ p.id }}"
+                     {% if rol and p in rol.permisos %}checked{% endif %}
+                     class="w-4 h-4 rounded border-slate-300 text-primary-600 mt-0.5 flex-shrink-0 focus:ring-primary-500">
+              <div class="min-w-0">
+                <p class="font-mono text-xs font-semibold text-slate-700">{{ p.permiso }}</p>
+                {% if p.descripcion %}
+                  <p class="text-xs text-slate-500 mt-0.5">{{ p.descripcion }}</p>
+                {% endif %}
+              </div>
+            </label>
+
+            {% if loop.last %}</div></div>{% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+          <p class="text-sm text-slate-400 italic py-4">No hay permisos definidos en el sistema.</p>
+        {% endif %}
+      </div>
+
+      {# ── Botones ── #}
+      <div class="flex gap-3 pt-2 border-t border-slate-100">
+        <button type="submit" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ 'Guardar cambios' if rol else 'Crear rol' }}
+        </button>
+        <a href="{{ url_for('admin.roles') }}" class="btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

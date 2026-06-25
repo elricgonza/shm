@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}Roles del Sistema{% endblock %}
+
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Administración', '#'), ('Roles', '#')]) }}
+
+{# ── Barra de acciones ── #}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+  <div>
+    <p class="text-sm text-slate-500">
+      {{ roles|length }} rol(es) definido(s) en el sistema
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{{ url_for('admin.usuarios') }}" class="btn-secondary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Volver a Usuarios
+    </a>
+    <a href="{{ url_for('admin.rol_nuevo') }}" class="btn-primary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 4v16m8-8H4"/>
+      </svg>
+      Nuevo Rol
+    </a>
+  </div>
+</div>
+
+{# ── Tarjetas de roles ── #}
+{% if roles %}
+<div class="grid gap-4">
+  {% for r in roles %}
+  <div class="card hover:shadow-md transition-shadow duration-200">
+    <div class="flex items-start justify-between gap-4">
+
+      {# Ícono + nombre ── #}
+      <div class="flex items-start gap-4 flex-1 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+          </svg>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h3 class="font-heading font-bold text-slate-800 capitalize">{{ r.rol }}</h3>
+            <span class="badge-blue">{{ r.permisos|length }} permiso(s)</span>
+          </div>
+          {% if r.descripcion %}
+            <p class="text-sm text-slate-500 mb-3">{{ r.descripcion }}</p>
+          {% endif %}
+
+          {# Permisos como chips ── #}
+          {% if r.permisos %}
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            {% for p in r.permisos %}
+              <span class="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200">
+                {{ p.permiso }}
+              </span>
+            {% endfor %}
+          </div>
+          {% else %}
+            <p class="text-xs text-slate-400 italic mt-2">Sin permisos asignados.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Botón editar ── #}
+      <a href="{{ url_for('admin.rol_editar', id=r.id) }}"
+         class="btn-secondary text-xs px-3 py-1.5 flex-shrink-0 mt-0.5">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Editar
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card flex flex-col items-center justify-center py-16 text-slate-400">
+  <svg class="w-12 h-12 opacity-40 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+  </svg>
+  <p class="text-sm mb-4">No hay roles registrados.</p>
+  <a href="{{ url_for('admin.rol_nuevo') }}" class="btn-primary text-sm">Crear primer rol</a>
+</div>
+{% endif %}
+{% endblock %}

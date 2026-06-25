@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}Fechas Transcripción Notas{% endblock %}
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Fechas Transcripción Notas', '#')]) }}
+
+<div class="max-w-2xl mx-auto">
+  <div class="card">
+
+    {# ── Encabezado ── #}
+    <div class="flex items-center gap-4 pb-5 mb-6 border-b border-slate-100">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+           style="background: linear-gradient(135deg,#7C1F3E,#5C1530);">
+        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Fechas de Transcripción de Notas</h2>
+        <p class="text-sm text-slate-500 mt-0.5">
+          Define los rangos de fecha en que se permite o restringe la transcripción por período.
+        </p>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('nota.config_transcripcion') }}">
+
+      {% for p, label in [('1','Período 1'), ('2','Período 2'), ('3','Período 3')] %}
+      {% set habilitado = cfg['habilitar_nota' ~ p] %}
+      {% set ini = cfg['transcripcion_nota' ~ p ~ '_inicio'] %}
+      {% set fin = cfg['transcripcion_nota' ~ p ~ '_final'] %}
+
+      {# ── Bloque por período ── #}
+      <div class="rounded-2xl border {% if habilitado %}border-emerald-200 bg-emerald-50/40{% else %}border-slate-200 bg-slate-50/40{% endif %} p-5 mb-5">
+
+        {# Encabezado del período #}
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                 style="background: linear-gradient(135deg,#7C1F3E,#5C1530);">{{ p }}</div>
+            <span class="font-bold text-slate-700 text-sm uppercase tracking-wide">{{ label }}</span>
+          </div>
+
+          {# Toggle habilitar #}
+          <label class="relative inline-flex items-center gap-3 cursor-pointer select-none">
+            <span class="text-sm font-medium text-slate-600">
+              {% if habilitado %}Habilitado{% else %}Deshabilitado{% endif %}
+            </span>
+            <div class="relative">
+              <input type="checkbox" name="habilitar_nota{{ p }}"
+                     id="habilitar_nota{{ p }}"
+                     class="sr-only peer"
+                     {% if habilitado %}checked{% endif %}
+                     onchange="togglePeriodo({{ p }}, this.checked)">
+              <div class="w-11 h-6 rounded-full transition-colors peer-checked:bg-emerald-500 bg-slate-300"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></div>
+            </div>
+          </label>
+        </div>
+
+        {# Fechas #}
+        <div class="grid grid-cols-2 gap-4" id="fechas_periodo_{{ p }}"
+             {% if not habilitado %}style="opacity:.45; pointer-events:none;"{% endif %}>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              Fecha Inicio
+            </label>
+            <input type="date"
+                   name="transcripcion_nota{{ p }}_inicio"
+                   value="{{ ini }}"
+                   class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white
+                          focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              Fecha Final
+            </label>
+            <input type="date"
+                   name="transcripcion_nota{{ p }}_final"
+                   value="{{ fin }}"
+                   class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white
+                          focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
+          </div>
+        </div>
+
+        {# Indicador de estado actual #}
+        {% if habilitado and ini and fin %}
+        <p class="mt-3 text-xs text-emerald-700 font-medium">
+          ✓ Habilitada del {{ ini|replace('-', '/') }} al {{ fin|replace('-', '/') }}
+        </p>
+        {% elif habilitado and not (ini and fin) %}
+        <p class="mt-3 text-xs text-amber-600 font-medium">
+          ⚠ Habilitada sin rango de fechas — se permite la transcripción en cualquier fecha.
+        </p>
+        {% else %}
+        <p class="mt-3 text-xs text-slate-400 font-medium">
+          — Transcripción deshabilitada para este período.
+        </p>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+
+      {# ── Acciones ── #}
+      <div class="flex items-center gap-3 pt-4 border-t border-slate-100 mt-2">
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white
+                       hover:opacity-90 transition-all"
+                style="background: linear-gradient(135deg,#7C1F3E,#5C1530);">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Guardar Configuración
+        </button>
+        <a href="{{ url_for('nota.index') }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
+                  text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Cancelar
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+function togglePeriodo(p, checked) {
+  const div = document.getElementById('fechas_periodo_' + p);
+  if (checked) {
+    div.style.opacity = '1';
+    div.style.pointerEvents = 'auto';
+  } else {
+    div.style.opacity = '0.45';
+    div.style.pointerEvents = 'none';
+  }
+  // Actualizar etiqueta de estado
+  const label = document.querySelector('#habilitar_nota' + p).closest('label').querySelector('span');
+  label.textContent = checked ? 'Habilitado' : 'Deshabilitado';
+  // Cambiar color del bloque contenedor
+  const bloque = div.closest('.rounded-2xl');
+  if (checked) {
+    bloque.classList.remove('border-slate-200', 'bg-slate-50\\/40');
+    bloque.classList.add('border-emerald-200', 'bg-emerald-50\\/40');
+  } else {
+    bloque.classList.remove('border-emerald-200', 'bg-emerald-50\\/40');
+    bloque.classList.add('border-slate-200', 'bg-slate-50\\/40');
+  }
+}
+</script>
+
+{% endblock %}

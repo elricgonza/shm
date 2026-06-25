@@ -1,0 +1,48 @@
+{% if not filas %}
+<div class="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">Sin datos financieros registrados.</div>
+{% else %}
+{% set total_esp = filas|sum(attribute='esp') %}
+{% set total_rec = filas|sum(attribute='rec') %}
+{% set total_pend = filas|sum(attribute='pend') %}
+<div class="grid grid-cols-3 gap-4 mb-4">
+  <div class="card text-center py-4">
+    <p class="text-xl font-bold text-slate-700">Bs. {{ "%.2f"|format(total_esp) }}</p>
+    <p class="text-xs text-slate-400 mt-1 uppercase tracking-wide font-semibold">Total Esperado</p>
+  </div>
+  <div class="card text-center py-4">
+    <p class="text-xl font-bold text-emerald-600">Bs. {{ "%.2f"|format(total_rec) }}</p>
+    <p class="text-xs text-slate-400 mt-1 uppercase tracking-wide font-semibold">Total Recaudado</p>
+  </div>
+  <div class="card text-center py-4">
+    <p class="text-xl font-bold {% if total_pend>0 %}text-red-600{% else %}text-slate-400{% endif %}">Bs. {{ "%.2f"|format(total_pend) }}</p>
+    <p class="text-xs text-slate-400 mt-1 uppercase tracking-wide font-semibold">Total Pendiente</p>
+  </div>
+</div>
+<div class="card p-0 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="rt w-full">
+      <thead><tr>
+        <th>Curso</th><th class="text-center">Alumnos</th>
+        <th class="text-right">Esperado Bs.</th><th class="text-right">Recaudado Bs.</th>
+        <th class="text-right">Pendiente Bs.</th><th class="text-center">% Cobrado</th>
+      </tr></thead>
+      <tbody>
+        {% for f in filas %}
+        <tr>
+          <td class="font-semibold">{{ f.curso }}</td>
+          <td class="text-center">{{ f.alumnos }}</td>
+          <td class="text-right">{{ "%.2f"|format(f.esp) }}</td>
+          <td class="text-right text-emerald-700 font-semibold">{{ "%.2f"|format(f.rec) }}</td>
+          <td class="text-right {% if f.pend>0 %}text-red-600 font-bold{% else %}text-slate-400{% endif %}">{{ "%.2f"|format(f.pend) }}</td>
+          <td class="text-center">
+            {% if f.pct >= 80 %}<span class="badge-ok">{{ f.pct }}%</span>
+            {% elif f.pct >= 50 %}<span class="badge-warn">{{ f.pct }}%</span>
+            {% else %}<span class="badge-err">{{ f.pct }}%</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

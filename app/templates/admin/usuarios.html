@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import confirm_delete, breadcrumb %}
+{% block page_title %}Usuarios y Roles{% endblock %}
+
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Administración', '#'), ('Usuarios', '#')]) }}
+
+{# ── Cabecera con estadísticas ── #}
+<div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <div class="card flex items-center gap-4 py-4">
+    <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+      <svg class="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-2xl font-heading font-bold text-slate-800">{{ usuarios|length }}</p>
+      <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Usuarios totales</p>
+    </div>
+  </div>
+  <div class="card flex items-center gap-4 py-4">
+    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+      <svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-2xl font-heading font-bold text-slate-800">{{ usuarios|selectattr('activo')|list|length }}</p>
+      <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Usuarios activos</p>
+    </div>
+  </div>
+  <div class="card flex items-center gap-4 py-4">
+    <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+      <svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-2xl font-heading font-bold text-slate-800">{{ usuarios|rejectattr('activo')|list|length }}</p>
+      <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Usuarios inactivos</p>
+    </div>
+  </div>
+</div>
+
+{# ── Barra de acciones ── #}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <p class="text-sm text-slate-500">Gestión de cuentas y permisos de acceso al sistema</p>
+  <div class="flex flex-wrap gap-2">
+    <a href="{{ url_for('admin.permisos') }}" class="btn-secondary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+      Ver Permisos
+    </a>
+    <a href="{{ url_for('admin.roles') }}" class="btn-secondary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+      </svg>
+      Gestionar Roles
+    </a>
+    <a href="{{ url_for('admin.usuario_nuevo') }}" class="btn-primary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 4v16m8-8H4"/>
+      </svg>
+      Nuevo Usuario
+    </a>
+  </div>
+</div>
+
+{# ── Tabla de usuarios ── #}
+<div class="card p-0 overflow-hidden">
+  <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+    <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+    <h2 class="font-heading font-bold text-sm text-slate-700 uppercase tracking-wider">Lista de Usuarios</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-slate-50 border-b border-slate-100">
+        <tr>
+          <th class="table-header">Usuario</th>
+          <th class="table-header">Email</th>
+          <th class="table-header">Roles asignados</th>
+          <th class="table-header">Estado</th>
+          <th class="table-header">Último acceso</th>
+          <th class="table-header text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr class="table-row">
+          <td class="table-cell">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-700
+                          text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-sm">
+                {{ u.usuario[0].upper() }}
+              </div>
+              <div>
+                <p class="font-semibold text-slate-800">{{ u.usuario }}</p>
+                {% if u.id == current_user.id %}
+                  <span class="text-xs text-primary-600 font-medium">← tú</span>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="table-cell text-slate-500">{{ u.email }}</td>
+          <td class="table-cell">
+            <div class="flex flex-wrap gap-1">
+              {% for r in u.roles %}
+                <span class="badge-guindo">{{ r.rol }}</span>
+              {% else %}
+                <span class="text-slate-400 text-xs italic">Sin rol</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="table-cell">
+            {% if u.activo %}
+              <span class="badge-green">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 inline-block"></span>
+                Activo
+              </span>
+            {% else %}
+              <span class="badge-red">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1 inline-block"></span>
+                Inactivo
+              </span>
+            {% endif %}
+          </td>
+          <td class="table-cell">
+            <span class="text-sm text-slate-500">
+              {{ u.last_login.strftime('%d/%m/%Y') if u.last_login else '—' }}
+            </span>
+          </td>
+          <td class="table-cell">
+            <div class="flex justify-end gap-2">
+              <a href="{{ url_for('admin.usuario_editar', id=u.id) }}"
+                 class="btn-secondary text-xs px-3 py-1.5"
+                 title="Editar usuario">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Editar
+              </a>
+              {% if u.id != current_user.id %}
+                {{ confirm_delete(url_for('admin.usuario_eliminar', id=u.id),
+                                  '¿Eliminar el usuario ' ~ u.usuario ~ '?') }}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="px-6 py-12 text-center">
+            <div class="flex flex-col items-center gap-3 text-slate-400">
+              <svg class="w-10 h-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <p class="text-sm">No hay usuarios registrados.</p>
+              <a href="{{ url_for('admin.usuario_nuevo') }}" class="btn-primary text-xs">Crear primer usuario</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

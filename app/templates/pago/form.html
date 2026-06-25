@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}Registrar Pago — Cuota #{{ pago.nro_cuota }}{% endblock %}
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Pagos', url_for('pago.index')), ('Registrar Pago', '#')]) }}
+
+{% set alumno = pago.inscrito.alumno if pago.inscrito and pago.inscrito.alumno else none %}
+{% set total_cuotas = otros_pagos | length %}
+{% set cuotas_pagadas = otros_pagos | selectattr('pagado') | list | length %}
+{% set monto_total = otros_pagos | sum(attribute='cuota') %}
+{% set monto_pagado = otros_pagos | selectattr('pagado') | list | sum(attribute='cuota') %}
+{% set progreso = ((cuotas_pagadas / total_cuotas) * 100) | int if total_cuotas > 0 else 0 %}
+
+<div class="max-w-2xl mx-auto">
+
+  <!-- Encabezado alumno -->
+  <div class="card mb-5 p-0 overflow-hidden">
+    <div style="background:linear-gradient(135deg,#7C1F3E,#5C1530);" class="px-6 py-4 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+        {{ alumno.nombre[0] if alumno else '?' }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-white font-bold text-base truncate">{{ alumno.nombre_completo if alumno else '—' }}</p>
+        <p class="text-white/70 text-xs mt-0.5">
+          {% if alumno and alumno.ci %}CI: {{ alumno.ci }} &nbsp;·&nbsp;{% endif %}
+          Inscrito al curso {{ pago.inscrito.curso.paralelo if pago.inscrito and pago.inscrito.curso else '—' }}
+        </p>
+      </div>
+      <div class="text-right flex-shrink-0">
+        <p class="text-white/70 text-xs">Total plan</p>
+        <p class="text-white font-bold text-lg">Bs. {{ "%.2f"|format(monto_total) }}</p>
+      </div>
+    </div>
+
+    <!-- Barra de progreso del plan de pagos -->
+    <div class="px-6 py-4 bg-white">
+      <div class="flex justify-between text-xs text-slate-500 mb-2">
+        <span class="font-semibold text-slate-700">Progreso del plan</span>
+        <span>{{ cuotas_pagadas }} de {{ total_cuotas }} cuotas pagadas</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-2 mb-3">
+        <div class="h-2 rounded-full transition-all"
+             style="width:{{ progreso }}%; background:linear-gradient(90deg,#7C1F3E,#5C1530);"></div>
+      </div>
+      <!-- Mini-timeline de cuotas -->
+      <div class="flex gap-1.5 flex-wrap">
+        {% for op in otros_pagos %}
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold border-2 transition-all
+            {% if op.pagado %}bg-emerald-500 border-emerald-500 text-white
+            {% elif op.id == pago.id %}text-white border-transparent{% raw %}{% endraw %}
+            {% else %}bg-white border-slate-200 text-slate-400{% endif %}"
+            {% if op.id == pago.id %}style="background:#7C1F3E;border-color:#7C1F3E;"{% endif %}
+            title="Cuota #{{ op.nro_cuota }} — Bs. {{ '%.2f'|format(op.cuota) }}{% if op.pagado %} (Pagada){% endif %}">
+            {% if op.pagado %}
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            {% else %}
+              {{ op.nro_cuota }}
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de registro -->
+  <div class="card">
+    <!-- Detalle de la cuota a pagar -->
+    <div class="rounded-xl px-5 py-4 mb-6 flex items-center justify-between"
+         style="background:#FAE4EB; border:1px solid #F2BAC9;">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider" style="color:#7C1F3E;">Registrando pago de</p>
+        <p class="text-xl font-bold mt-0.5" style="color:#4A1226;">Cuota #{{ pago.nro_cuota }}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-slate-500 mb-0.5">Monto a cobrar</p>
+        <p class="text-3xl font-bold" style="color:#631832;">Bs. {{ "%.2f"|format(pago.cuota) }}</p>
+      </div>
+    </div>
+
+    <form method="POST">
+      <div class="space-y-5">
+
+        <!-- Método de pago con iconos -->
+        <div>
+          <label class="form-label">Método de Pago <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1" id="metodo-group">
+            {% set metodos = [
+              ('Efectivo',       'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z'),
+              ('Transferencia',  'M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z'),
+              ('QR',             'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 4h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z'),
+              ('Cheque',         'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z')
+            ] %}
+            {% for val, icon_path in metodos %}
+            <label class="metodo-card flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 border-slate-200 cursor-pointer transition-all hover:border-primary-300 hover:bg-primary-50/50 text-center select-none">
+              <input type="radio" name="metodo_pago" value="{{ val }}" class="sr-only" required>
+              <svg class="w-6 h-6 text-slate-400 metodo-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="{{ icon_path }}"/>
+              </svg>
+              <span class="text-xs font-semibold text-slate-600 metodo-label">{{ val }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <!-- fallback hidden select for form submission -->
+          <input type="hidden" name="metodo_pago" id="metodo_hidden">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="form-label">Fecha y Hora de Pago <span class="text-red-500">*</span></label>
+            <input type="datetime-local" name="fecha_pago" required value="{{ today }}" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Nro. Referencia / Comprobante</label>
+            <input type="text" name="referencia_pago" class="form-input" placeholder="Ej: TRF-0001">
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Observaciones</label>
+          <input type="text" name="obs" class="form-input" placeholder="Opcional...">
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-8 pt-5 border-t border-slate-100">
+        <button type="submit"
+                class="flex-1 inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                style="background:linear-gradient(135deg,#059669,#047857);">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Confirmar Pago — Bs. {{ "%.2f"|format(pago.cuota) }}
+        </button>
+        <a href="{{ url_for('pago.index', alu_id=alumno.id if alumno else '') }}"
+           class="inline-flex items-center justify-center h-11 px-5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const cards  = document.querySelectorAll('.metodo-card');
+  const hidden = document.getElementById('metodo_hidden');
+
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      // Reset all
+      cards.forEach(c => {
+        c.classList.remove('border-primary-600', 'bg-primary-50');
+        c.classList.add('border-slate-200');
+        c.querySelector('.metodo-icon').classList.remove('text-primary-700');
+        c.querySelector('.metodo-icon').classList.add('text-slate-400');
+        c.querySelector('.metodo-label').classList.remove('text-primary-700');
+        c.querySelector('.metodo-label').classList.add('text-slate-600');
+      });
+      // Activate clicked
+      card.classList.add('border-primary-600', 'bg-primary-50');
+      card.classList.remove('border-slate-200');
+      card.querySelector('.metodo-icon').classList.add('text-primary-700');
+      card.querySelector('.metodo-icon').classList.remove('text-slate-400');
+      card.querySelector('.metodo-label').classList.add('text-primary-700');
+      card.querySelector('.metodo-label').classList.remove('text-slate-600');
+      // Set hidden input
+      hidden.value = card.querySelector('input[type=radio]').value;
+      card.querySelector('input[type=radio]').checked = true;
+    });
+  });
+
+  // Validate método on submit
+  document.querySelector('form').addEventListener('submit', function (e) {
+    if (!hidden.value) {
+      e.preventDefault();
+      cards.forEach(c => c.classList.add('ring-2', 'ring-red-400'));
+      setTimeout(() => cards.forEach(c => c.classList.remove('ring-2','ring-red-400')), 1500);
+    }
+  });
+})();
+</script>
+{% endblock %}

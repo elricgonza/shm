@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Panel Principal — SHALOM{% endblock %}
+{% block page_title %}Panel Principal{% endblock %}
+
+{% block content %}
+<!-- Gestión activa -->
+{% if gestion %}
+<div class="mb-6 rounded-xl px-5 py-4 flex items-center gap-4 border"
+     style="background: linear-gradient(135deg, #FAE4EB, #FDF4F6); border-color: #F2BAC9;">
+  <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow flex-shrink-0"
+       style="background: linear-gradient(135deg, #7C1F3E, #4A1226);">
+    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+  </div>
+  <div>
+    <p class="font-semibold text-primary-800">Gestión Académica {{ gestion.gestion }}</p>
+    <p class="text-sm text-primary-600">{{ gestion.plan }} · {{ gestion.inicio.strftime('%d/%m/%Y') }} — {{ gestion.fin.strftime('%d/%m/%Y') }}</p>
+  </div>
+  <span class="ml-auto badge-green">Activa</span>
+</div>
+{% endif %}
+
+<!-- Stats cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  {% set stat_items = [
+    ('Alumnos Activos',   stats.alumnos,          '#7C1F3E', '#FAE4EB', 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'),
+    ('Cursos',            stats.cursos,           '#0f766e', '#ccfbf1', 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'),
+    ('Profesores',        stats.profesores,       '#b45309', '#fef3c7', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'),
+    ('Pagos Pendientes',  stats.pagos_pendientes, '#1d4ed8', '#dbeafe', 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'),
+  ] %}
+  {% for label, value, color, bg, icon in stat_items %}
+  <div class="card flex items-center gap-4">
+    <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+         style="background-color: {{ bg }};">
+      <svg class="w-6 h-6" style="color: {{ color }};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="{{ icon }}"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-2xl font-heading font-bold text-slate-800">{{ value }}</p>
+      <p class="text-xs text-slate-500 font-medium">{{ label }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Accesos rápidos -->
+<div class="card">
+  <div class="flex items-center gap-3 mb-5">
+    <span class="w-1 h-5 rounded-full bg-primary-600"></span>
+    <h2 class="font-heading font-bold text-slate-800">Accesos Rápidos</h2>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    {% set shortcuts = [
+      ('Nuevo Alumno',      'alumno.nuevo',     '#7C1F3E', '#FAE4EB'),
+      ('Nueva Inscripción', 'inscrito.nuevo',   '#0f766e', '#ccfbf1'),
+      ('Registrar Nota',    'nota.nueva',       '#b45309', '#fef3c7'),
+      ('Registrar Pago',    'pago.index',       '#1d4ed8', '#dbeafe'),
+      ('Nueva Gestión',     'gestion.nueva',    '#7e22ce', '#f3e8ff'),
+      ('Nuevo Profesor',    'profesor.nuevo',   '#0e7490', '#cffafe'),
+      ('Nuevo Curso',       'curso.nuevo',      '#15803d', '#dcfce7'),
+      ('Nueva Materia',     'materia.nueva',    '#c2410c', '#ffedd5'),
+    ] %}
+    {% for label, endpoint, color, bg in shortcuts %}
+    <a href="{{ url_for(endpoint) }}"
+       class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
+           style="background-color: {{ bg }};">
+        <div class="w-2.5 h-2.5 rounded-full" style="background-color: {{ color }};"></div>
+      </div>
+      <span class="text-sm font-medium text-slate-700">{{ label }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

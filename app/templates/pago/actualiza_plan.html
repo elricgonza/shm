@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb %}
+{% block page_title %}Actualiza Plan de Pagos{% endblock %}
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Pagos', url_for('pago.index')), ('Actualiza Plan de Pagos', '#')]) }}
+
+{% if not ejecutado %}
+{# ── PANTALLA DE CONFIRMACIÓN (GET) ─────────────────────────────────────── #}
+<div class="max-w-xl mx-auto">
+  <div class="card mb-6">
+    <div class="flex items-center gap-4 mb-5">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+           style="background: linear-gradient(135deg,#7C1F3E,#5C1530);">
+        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Actualiza Plan de Pagos</h2>
+        <p class="text-sm text-slate-500 mt-0.5">Complementa cuotas faltantes para alumnos inscritos o en reserva</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 divide-y divide-slate-100 mb-6">
+      <div class="flex items-center justify-between px-4 py-3">
+        <span class="text-sm text-slate-600">Alumnos con inscripción activa o reserva</span>
+        <span class="text-sm font-bold text-slate-800">{{ total_candidatos }}</span>
+      </div>
+    </div>
+
+    <div class="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
+      <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div class="text-sm text-amber-800">
+        <p class="font-semibold mb-1">Antes de continuar, tenga en cuenta:</p>
+        <ul class="space-y-1 list-disc list-inside text-amber-700">
+          <li>Solo se añaden las cuotas <strong>faltantes</strong>; los registros existentes no se modifican.</li>
+          <li>Si un alumno tiene cuotas pagadas, éstas se conservan intactas y se completan las que falten.</li>
+          <li>Los alumnos con descuento verán sus cuotas nuevas ajustadas automáticamente.</li>
+          <li>Los alumnos que ya tienen la totalidad de cuotas no sufrirán ningún cambio.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 justify-end">
+      <a href="{{ url_for('pago.index') }}"
+         class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">
+        Cancelar
+      </a>
+      <form method="POST" action="{{ url_for('pago.actualiza_plan') }}">
+        <button type="submit"
+                class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 flex items-center gap-2"
+                style="background: linear-gradient(135deg,#7C1F3E,#5C1530);"
+                onclick="this.disabled=true; this.innerText='Procesando...'; this.form.submit();">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Actualizar Plan de Pagos
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% else %}
+{# ── PANTALLA DE RESULTADOS (POST) ──────────────────────────────────────── #}
+<div class="max-w-3xl mx-auto">
+
+  {# Resumen #}
+  <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="card text-center">
+      <p class="text-3xl font-bold text-emerald-700">{{ actualizados }}</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">Actualizados</p>
+    </div>
+    <div class="card text-center">
+      <p class="text-3xl font-bold text-slate-400">{{ ya_completos }}</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">Ya completos</p>
+    </div>
+    <div class="card text-center">
+      <p class="text-3xl font-bold text-amber-600">{{ sin_costo }}</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">Sin costos definidos</p>
+    </div>
+  </div>
+
+  {# Banner resultado #}
+  {% if actualizados > 0 %}
+  <div class="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-6">
+    <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <p class="text-sm text-emerald-800 font-medium">
+      Plan de pagos actualizado exitosamente para <strong>{{ actualizados }}</strong>
+      alumno{{ 's' if actualizados != 1 else '' }}.
+    </p>
+  </div>
+  {% else %}
+  <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 mb-6">
+    <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-sm text-slate-600 font-medium">No se realizó ningún cambio en los planes de pago.</p>
+  </div>
+  {% endif %}
+
+  {# Detalle por alumno #}
+  {% if detalle %}
+  <div class="card p-0 overflow-hidden">
+    <div style="background:linear-gradient(135deg,#7C1F3E,#5C1530);">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Alumno</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Estado</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-white/80 uppercase tracking-wider">Detalle</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+    <table class="w-full">
+      <tbody>
+        {% for d in detalle %}
+        <tr class="border-t border-slate-100 hover:bg-slate-50/60 transition-colors">
+          <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ d.alumno }}</td>
+          <td class="px-4 py-3">
+            {% if d.estado == 'actualizado' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Actualizado
+            </span>
+            {% elif d.estado == 'completo' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Completo
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Sin costo
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-sm text-slate-500">{{ d.msg }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="flex justify-end mt-6">
+    <a href="{{ url_for('pago.index') }}"
+       class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+       style="background: linear-gradient(135deg,#7C1F3E,#5C1530);">
+      Ir a Pagos
+    </a>
+  </div>
+
+</div>
+{% endif %}
+
+{% endblock %}

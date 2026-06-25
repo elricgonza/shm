@@ -1,0 +1,28 @@
+{% if not filas %}
+<div class="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">No hay calificaciones registradas para calcular promedios.</div>
+{% else %}
+<div class="card p-0 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="rt w-full">
+      <thead><tr>
+        <th>Curso</th><th class="text-center">Puesto</th><th>Alumno</th>
+        <th class="text-center">Promedio</th><th class="text-center">Aprob.</th><th class="text-center">Reprobadas</th>
+      </tr></thead>
+      <tbody>
+        {% for f in filas %}
+        <tr class="{% if f.pos==1 %}medal-1{% elif f.pos==2 %}medal-2{% elif f.pos==3 %}medal-3{% endif %}">
+          <td class="text-slate-500 text-xs">{{ f.curso }}</td>
+          <td class="text-center">
+            {% if f.pos==1 %}🥇{% elif f.pos==2 %}🥈{% else %}🥉{% endif %} #{{ f.pos }}
+          </td>
+          <td class="font-bold">{{ f.alumno }}</td>
+          <td class="text-center font-bold text-lg">{{ f.prom }}</td>
+          <td class="text-center"><span class="badge-ok">{{ f.apr }}</span></td>
+          <td class="text-center">{% if f.rep > 0 %}<span class="badge-err">{{ f.rep }}</span>{% else %}<span class="text-slate-300">0</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Anulación Plan de Pagos — SHALOM{% endblock %}
+{% block page_title %}Anulación Plan de Pagos{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- ════════════════════════════════════════
+       PANEL 1 — Anular por alumno
+  ════════════════════════════════════════ -->
+  <div class="card p-0 overflow-hidden">
+
+    <!-- Cabecera del panel -->
+    <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-100"
+         style="background: linear-gradient(135deg, #fdf4f6 0%, #fff 100%);">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+           style="background: linear-gradient(135deg, #7C1F3E, #B5416A);">
+        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="font-heading font-bold text-slate-800 text-base leading-tight">
+          Anular Plan de Pagos — Alumno Específico
+        </h2>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Elimina únicamente las cuotas <span class="font-semibold text-amber-600">no pagadas</span>
+          del alumno seleccionado.
+        </p>
+      </div>
+    </div>
+
+    <div class="px-6 py-5 space-y-4" x-data="alumnoSearch()">
+
+      <!-- Buscador de alumno -->
+      <div>
+        <label class="form-label">Buscar Alumno</label>
+        <div class="relative">
+          <input
+            type="text"
+            x-model="query"
+            @input.debounce.350ms="buscar"
+            @keydown.escape="cerrar"
+            placeholder="Nombre, apellido o C.I.…"
+            autocomplete="off"
+            class="form-input pr-10"
+          />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
+            </svg>
+          </span>
+          <!-- Dropdown de resultados -->
+          <ul x-show="resultados.length > 0" x-cloak
+              class="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden max-h-56 overflow-y-auto">
+            <template x-for="a in resultados" :key="a.id">
+              <li @click="seleccionar(a)"
+                  class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-primary-50 transition-colors border-b border-slate-50 last:border-0">
+                <span class="text-sm font-medium text-slate-800" x-text="a.texto"></span>
+                <span class="text-xs text-slate-400 font-mono" x-text="'CI: ' + a.ci"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Alumno seleccionado + vista previa -->
+      {% if alumno_sel %}
+      <div class="rounded-xl border border-primary-200 bg-primary-50/50 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white"
+                 style="background: linear-gradient(135deg, #7C1F3E, #B5416A);">
+              {{ alumno_sel.nombre[0].upper() }}
+            </div>
+            <div>
+              <p class="font-semibold text-slate-800 text-sm">{{ alumno_sel.nombre_completo }}</p>
+              <p class="text-xs text-slate-500">CI: {{ alumno_sel.ci or '—' }}</p>
+            </div>
+          </div>
+          <a href="{{ url_for('anulacion.index') }}"
+             class="text-xs text-slate-400 hover:text-primary-600 transition-colors">
+            ✕ Quitar
+          </a>
+        </div>
+
+        {% if pagos_alumno %}
+        <!-- Tabla de cuotas a eliminar -->
+        <div class="rounded-lg border border-primary-200 overflow-hidden">
+          <div class="px-3 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                    d="M12 9v2m0 4h.01M12 4a8 8 0 100 16A8 8 0 0012 4z"/>
+            </svg>
+            <p class="text-xs font-semibold text-amber-700">
+              Se eliminarán {{ pagos_alumno|length }} cuota(s) no pagada(s):
+            </p>
+          </div>
+          <table class="min-w-full divide-y divide-slate-100 bg-white text-xs">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-3 py-2 text-left text-slate-500 font-semibold uppercase tracking-wider w-20">Cuota</th>
+                <th class="px-3 py-2 text-right text-slate-500 font-semibold uppercase tracking-wider">Monto</th>
+                <th class="px-3 py-2 text-center text-slate-500 font-semibold uppercase tracking-wider">Estado</th>
+                <th class="px-3 py-2 text-left text-slate-500 font-semibold uppercase tracking-wider">Observación</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              {% for p in pagos_alumno %}
+              <tr class="hover:bg-red-50/50">
+                <td class="px-3 py-2 font-mono font-semibold text-primary-700">Nro. {{ p.nro_cuota }}</td>
+                <td class="px-3 py-2 text-right font-mono text-slate-700">Bs. {{ "%.2f"|format(p.cuota) }}</td>
+                <td class="px-3 py-2 text-center">
+                  <span class="badge-yellow">Pendiente</span>
+                </td>
+                <td class="px-3 py-2 text-slate-400">{{ p.obs or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Botón confirmar para 1 alumno -->
+        <form method="post" action="{{ url_for('anulacion.anular_alumno') }}"
+              onsubmit="return confirm('¿Confirma la anulación de {{ pagos_alumno|length }} cuota(s) de {{ alumno_sel.nombre_completo }}?');">
+          <input type="hidden" name="alu_id" value="{{ alumno_sel.id }}"/>
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-500">
+              Total a eliminar:
+              <span class="font-bold text-red-600">
+                Bs. {{ "%.2f"|format(pagos_alumno|sum(attribute='cuota')) }}
+              </span>
+            </p>
+            <button type="submit" class="btn-danger text-xs px-4 py-2">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Anular Plan de este Alumno
+            </button>
+          </div>
+        </form>
+
+        {% else %}
+        <div class="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-4 py-3">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+          Este alumno no tiene cuotas pendientes de pago (todas pagadas o sin plan).
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Formulario oculto para redirigir al seleccionar alumno vía JS -->
+      <form id="form-busca-alumno" method="get" action="{{ url_for('anulacion.index') }}">
+        <input type="hidden" id="input-alu-id" name="alu_id" value=""/>
+      </form>
+
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       PANEL 2 — Anular TODOS
+  ════════════════════════════════════════ -->
+  <div class="card p-0 overflow-hidden" x-data="{ abierto: false }">
+
+    <!-- Cabecera -->
+    <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-100"
+         style="background: linear-gradient(135deg, #fff8f8 0%, #fff 100%);">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-600">
+        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h2 class="font-heading font-bold text-slate-800 text-base leading-tight">
+          Anular Plan de Pagos — Todos los Alumnos
+        </h2>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Elimina masivamente todas las cuotas
+          <span class="font-semibold text-amber-600">no pagadas</span>
+          de la base de datos.
+        </p>
+      </div>
+      <span class="badge-red text-sm font-bold px-3 py-1">
+        {{ total_no_pagados }} pendiente{{ 's' if total_no_pagados != 1 else '' }}
+      </span>
+    </div>
+
+    <div class="px-6 py-5">
+
+      {% if total_no_pagados == 0 %}
+      <!-- Sin cuotas pendientes -->
+      <div class="flex items-center gap-3 text-sm text-emerald-700 bg-emerald-50 rounded-xl px-4 py-4">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+        No hay cuotas pendientes de pago en el sistema.
+      </div>
+
+      {% else %}
+      <!-- Aviso de peligro -->
+      <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-4 mb-4">
+        <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M12 5a7 7 0 100 14A7 7 0 0012 5z"/>
+        </svg>
+        <div class="text-sm text-red-800 space-y-1">
+          <p class="font-bold">Acción irreversible</p>
+          <p>
+            Se eliminarán permanentemente
+            <span class="font-bold">{{ total_no_pagados }} registro(s)</span>
+            de cuotas no pagadas correspondientes a <strong>todos</strong> los alumnos.
+            Esta operación no se puede deshacer.
+          </p>
+        </div>
+      </div>
+
+      <!-- Botón para desplegar formulario de confirmación -->
+      <button @click="abierto = !abierto"
+              class="btn-danger w-full justify-center mb-3">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Anular Plan de Todos los Alumnos
+      </button>
+
+      <!-- Formulario de confirmación -->
+      <div x-show="abierto" x-cloak x-transition
+           class="rounded-xl border border-red-300 bg-white p-4 space-y-3">
+        <p class="text-sm font-semibold text-slate-700">
+          Para confirmar, escriba
+          <code class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-mono tracking-widest">ANULAR</code>
+          en el campo y presione el botón:
+        </p>
+        <form method="post" action="{{ url_for('anulacion.anular_todos') }}"
+              x-data="{ confirmado: '' }"
+              @submit.prevent="
+                if(confirmado === 'ANULAR'){
+                  if(confirm('¿ÚLTIMA CONFIRMACIÓN? Se eliminarán {{ total_no_pagados }} cuota(s) no pagadas de TODOS los alumnos.')){
+                    $el.submit()
+                  }
+                } else {
+                  alert('Debe escribir ANULAR exactamente para continuar.')
+                }
+              ">
+          <div class="flex gap-2">
+            <input
+              type="text"
+              name="confirmar"
+              x-model="confirmado"
+              placeholder="Escriba ANULAR aquí…"
+              autocomplete="off"
+              class="form-input font-mono tracking-widest text-red-700 border-red-300 focus:ring-red-500 focus:border-red-500"
+            />
+            <button
+              type="submit"
+              :disabled="confirmado !== 'ANULAR'"
+              :class="confirmado === 'ANULAR'
+                ? 'btn-danger'
+                : 'btn flex-shrink-0 bg-slate-200 text-slate-400 cursor-not-allowed'"
+              class="flex-shrink-0 px-5">
+              Confirmar
+            </button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function alumnoSearch() {
+  return {
+    query: '{{ alumno_sel.nombre_completo if alumno_sel else "" }}',
+    resultados: [],
+    async buscar() {
+      if (this.query.length < 2) { this.resultados = []; return; }
+      const r = await fetch(`{{ url_for('anulacion.buscar_alumno') }}?q=` + encodeURIComponent(this.query));
+      this.resultados = await r.json();
+    },
+    seleccionar(a) {
+      this.query     = a.texto;
+      this.resultados = [];
+      document.getElementById('input-alu-id').value = a.id;
+      document.getElementById('form-busca-alumno').submit();
+    },
+    cerrar() {
+      this.resultados = [];
+    }
+  }
+}
+</script>
+{% endblock %}

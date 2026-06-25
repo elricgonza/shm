@@ -1,0 +1,35 @@
+{% if not filas %}
+<div class="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">Sin calificaciones registradas para calcular tasas de aprobación.</div>
+{% else %}
+<div class="card p-0 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="rt w-full">
+      <thead><tr>
+        <th>#</th><th>Materia</th><th class="text-center">Total</th>
+        <th class="text-center">Aprob.</th><th class="text-center">Reprobados</th>
+        <th class="text-center">% Aprobación</th>
+        <th class="text-center">Promedio</th><th class="text-center">Mín.</th><th class="text-center">Máx.</th>
+      </tr></thead>
+      <tbody>
+        {% for f in filas %}
+        <tr>
+          <td class="text-slate-400">{{ f.n }}</td>
+          <td class="font-semibold">{{ f.mat }}</td>
+          <td class="text-center">{{ f.tot }}</td>
+          <td class="text-center"><span class="badge-ok">{{ f.apr }}</span></td>
+          <td class="text-center">{% if f.rep>0 %}<span class="badge-err">{{ f.rep }}</span>{% else %}<span class="text-slate-300">0</span>{% endif %}</td>
+          <td class="text-center">
+            {% if f.pct>=70 %}<span class="badge-ok">{{ f.pct }}%</span>
+            {% elif f.pct>=50 %}<span class="badge-warn">{{ f.pct }}%</span>
+            {% else %}<span class="badge-err">{{ f.pct }}%</span>{% endif %}
+          </td>
+          <td class="text-center font-bold">{{ f.prom }}</td>
+          <td class="text-center text-slate-400">{{ f.mn }}</td>
+          <td class="text-center text-slate-400">{{ f.mx }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

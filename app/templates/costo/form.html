@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Asignar Costos — {{ curso.paralelo }} {{ curso.gestion }} — SHALOM{% endblock %}
+{% block page_title %}Asignación de Costos{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-5">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm text-slate-500">
+    <a href="{{ url_for('costo.index') }}" class="hover:text-primary-600 transition-colors">Asignación de Costos</a>
+    <svg class="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-slate-700 font-medium">
+      {{ curso.grado.grado }} — {{ curso.paralelo }} ({{ curso.gestion }})
+    </span>
+  </nav>
+
+  <!-- Info del curso -->
+  <div class="card bg-primary-50 border border-primary-100 p-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+      <div>
+        <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Gestión</p>
+        <p class="font-bold text-primary-700 text-base">{{ curso.gestion }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Grado</p>
+        <p class="font-semibold text-slate-800">{{ curso.grado.grado }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Paralelo</p>
+        <p class="font-semibold text-slate-800">{{ curso.paralelo }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Aula</p>
+        <p class="font-semibold text-slate-800">{{ curso.aula or '—' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de cuotas -->
+  <form method="post">
+    <div class="card space-y-0 p-0 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <h2 class="font-heading font-bold text-slate-800 text-base">Plan de Cuotas Anual</h2>
+        <span class="badge-guindo">10 cuotas</span>
+      </div>
+
+      <table class="min-w-full divide-y divide-slate-100">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="table-header w-20 text-center">Nro. Cuota</th>
+            <th class="table-header">Monto (Bs.)</th>
+            <th class="table-header">Observación</th>
+            <th class="table-header w-40 text-center text-xs">Última actualización</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% for costo in costos %}
+          <tr class="hover:bg-primary-50/30 transition-colors">
+            <!-- Número de cuota (solo lectura) -->
+            <td class="table-cell text-center">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-full
+                           bg-primary-100 text-primary-700 font-bold text-sm">
+                {{ costo.nro_cuota }}
+              </span>
+            </td>
+
+            <!-- Monto -->
+            <td class="table-cell">
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">Bs.</span>
+                <input
+                  type="number"
+                  name="cuota_{{ costo.nro_cuota }}"
+                  value="{{ costo.cuota if costo.cuota else '' }}"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                  class="form-input pl-10 w-40 text-right font-mono"
+                />
+              </div>
+            </td>
+
+            <!-- Observación -->
+            <td class="table-cell">
+              <input
+                type="text"
+                name="obs_{{ costo.nro_cuota }}"
+                value="{{ costo.obs or '' }}"
+                maxlength="200"
+                placeholder="Observación opcional…"
+                class="form-input w-full"
+              />
+            </td>
+
+            <!-- Fecha actualización -->
+            <td class="table-cell text-center text-xs text-slate-400">
+              {% if costo.cuota %}
+                {{ costo.act.strftime('%d/%m/%Y') if costo.act else '—' }}
+              {% else %}
+                <span class="text-slate-300">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Pie del formulario -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+        <a href="{{ url_for('costo.index') }}" class="btn-secondary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Cancelar
+        </a>
+        <button type="submit" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M5 13l4 4L19 7"/>
+          </svg>
+          Guardar Costos
+        </button>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

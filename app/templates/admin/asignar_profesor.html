@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import breadcrumb, confirm_delete %}
+{% block page_title %}Asignar Usuario como Profesor{% endblock %}
+{% block content %}
+{{ breadcrumb([('Inicio', '/'), ('Administración', url_for('admin.usuarios')), ('Asignar Profesor', '#')]) }}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- Panel izquierdo: formulario de asignación -->
+  <div>
+    <div class="card">
+      <div class="flex items-center gap-4 pb-5 mb-6 border-b border-slate-100">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+             style="background:linear-gradient(135deg,#FAE4EB,#F2BAC9);">
+          <svg class="w-6 h-6" style="color:#7C1F3E;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="font-bold text-slate-800 text-lg">Nueva Asignación</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Vincule un usuario con rol "profesor" a su registro de profesor</p>
+        </div>
+      </div>
+
+      <form method="POST" class="space-y-5">
+
+        <!-- Profesor -->
+        <div>
+          <label class="form-label">Profesor <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-0 inset-y-0 w-10 flex items-center justify-center pointer-events-none text-slate-400 z-10">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </span>
+            <select name="pro_id" required id="sel-profesor"
+                    class="form-select pl-10 appearance-none">
+              <option value="">Seleccionar profesor...</option>
+              {% for p in profesores %}
+              <option value="{{ p.id }}"
+                      data-vinculado="{{ p.usr_id_login or '' }}"
+                      data-nombre="{{ p.nombre_completo }}">
+                {{ p.nombre_completo }}
+                {% if p.ci %} — CI: {{ p.ci }}{% endif %}
+                {% if p.usr_id_login %} ✓ vinculado{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- Aviso si ya tiene usuario asignado -->
+          <div id="aviso-vinculado" class="hidden mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span id="aviso-texto">Este profesor ya tiene un usuario vinculado. Al guardar se reemplazará.</span>
+          </div>
+        </div>
+
+        <!-- Usuario -->
+        <div>
+          <label class="form-label">Usuario del Sistema <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-0 inset-y-0 w-10 flex items-center justify-center pointer-events-none text-slate-400 z-10">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </span>
+            <select name="usu_id" required
+                    class="form-select pl-10 appearance-none">
+              <option value="">Seleccionar usuario...</option>
+              {% for u in usuarios %}
+              <option value="{{ u.id }}">
+                {{ u.usuario }}
+                {% if u.email %} — {{ u.email }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if not usuarios %}
+          <p class="mt-1.5 text-xs text-slate-500">
+            No hay usuarios con rol "profesor" disponibles.
+            <a href="{{ url_for('admin.usuario_nuevo') }}" class="text-primary-600 font-semibold hover:underline">Crear uno</a>.
+          </p>
+          {% endif %}
+        </div>
+
+        <div class="pt-2">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                  style="background:linear-gradient(135deg,#7C1F3E,#5C1530);">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            Guardar Asignación
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel derecho: estado actual de vinculaciones -->
+  <div>
+    <div class="card p-0 overflow-hidden">
+      <div style="background:linear-gradient(135deg,#7C1F3E,#5C1530);" class="px-5 py-4 flex items-center gap-3">
+        <svg class="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <h3 class="text-sm font-bold text-white">Estado de Vinculaciones</h3>
+        <span class="ml-auto text-xs text-white/60 font-medium">{{ profesores|length }} profesor(es)</span>
+      </div>
+
+      <div class="divide-y divide-slate-100 max-h-[520px] overflow-y-auto">
+        {% for p in profesores %}
+        <div class="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors">
+          <!-- Avatar -->
+          <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white"
+               style="background:linear-gradient(135deg,{% if p.usr_id_login %}#059669,#047857{% else %}#94a3b8,#64748b{% endif %});">
+            {{ p.nombre[0] }}
+          </div>
+
+          <!-- Info profesor -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-800 truncate">{{ p.nombre_completo }}</p>
+            {% if p.usr_id_login %}
+              {% set usu_vinculado = profesores | selectattr('id', 'equalto', p.id) | first %}
+              {# Buscar el usuario por id #}
+              <p class="text-xs text-emerald-700 font-medium flex items-center gap-1 mt-0.5">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+                Usuario ID: {{ p.usr_id_login }}
+              </p>
+            {% else %}
+              <p class="text-xs text-slate-400 mt-0.5">Sin usuario asignado</p>
+            {% endif %}
+          </div>
+
+          <!-- Badge + acción desvincular -->
+          <div class="flex items-center gap-2 flex-shrink-0">
+            {% if p.usr_id_login %}
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Vinculado
+            </span>
+            <form method="POST" action="{{ url_for('admin.desvincular_profesor', pro_id=p.id) }}"
+                  x-data="{ open: false }">
+              <button type="button" @click="open=true"
+                      class="h-7 w-7 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition-all" title="Desvincular">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+              <div x-show="open" x-cloak
+                   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" x-transition>
+                <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 p-7 max-w-sm w-full" @click.stop>
+                  <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="font-bold text-slate-800">Confirmar desvinculación</h3>
+                      <p class="text-slate-500 text-sm mt-0.5">¿Desvincular el usuario del profesor "{{ p.nombre_completo }}"?</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-3 justify-end mt-5">
+                    <button type="button" @click="open=false"
+                            class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">
+                      Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all">
+                      Sí, desvincular
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+            {% else %}
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Libre
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="px-5 py-12 text-center text-slate-400">
+          <svg class="w-10 h-10 opacity-30 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          <p class="text-sm">No hay profesores registrados.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Aviso si el profesor seleccionado ya tiene un usuario vinculado
+document.getElementById('sel-profesor').addEventListener('change', function () {
+  const opt     = this.options[this.selectedIndex];
+  const vinc    = opt ? opt.dataset.vinculado : '';
+  const aviso   = document.getElementById('aviso-vinculado');
+  if (vinc) {
+    aviso.classList.remove('hidden');
+  } else {
+    aviso.classList.add('hidden');
+  }
+});
+</script>
+{% endblock %}
